@@ -7,8 +7,8 @@
   <meta name="description" content="손그림 스케치 7종을 아무 문구에 적용하는 타이포그래피 실험" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet" />
-  <script type="module" crossorigin src="./assets/index-BsA5c-g1.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-xqChbE1c.css">
+  <script type="module" crossorigin src="./assets/index-CmV3CBBx.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-lwAKKZcV.css">
 </head>
 <body>
   <header class="top">
@@ -22,41 +22,41 @@
   <main class="wrap">
     <aside class="side">
       <section>
-        <label class="k" for="txt">Text</label>
+        <label class="k" for="txt">문구</label>
         <textarea id="txt" rows="2" spellcheck="false"></textarea>
       </section>
 
       <section>
-        <div class="k">Style</div>
+        <div class="k">스타일</div>
         <ol id="styles" class="list"></ol>
       </section>
 
       <section class="ctrls">
-        <label class="ctl"><span>Size</span><input id="size" type="range" min="40" max="320" /><b id="sizeV"></b></label>
-        <label class="ctl"><span>Tracking</span><input id="track" type="range" min="-150" max="300" /><b id="trackV"></b></label>
-        <label class="ctl"><span>Leading</span><input id="lead" type="range" min="60" max="180" /><b id="leadV"></b></label>
-        <div class="ctl"><span>Align</span><span class="opts" id="align"><button data-v="left">left</button> / <button data-v="center">center</button> / <button data-v="right">right</button></span></div>
+        <label class="ctl"><span>크기</span><input id="size" type="range" min="40" max="320" /><b id="sizeV"></b></label>
+        <label class="ctl"><span>자간</span><input id="track" type="range" min="-150" max="300" /><b id="trackV"></b></label>
+        <label class="ctl"><span>행간</span><input id="lead" type="range" min="60" max="180" /><b id="leadV"></b></label>
+        <div class="ctl"><span>정렬</span><span class="opts" id="align"><button data-v="left">왼쪽</button> / <button data-v="center">가운데</button> / <button data-v="right">오른쪽</button></span></div>
       </section>
 
       <section class="ctrls">
-        <div class="ctl tg"><span>Alternates</span><button id="alt" class="sw"></button></div>
-        <div class="ctl tg"><span>Wobble</span><button id="jit" class="sw"></button></div>
-        <div class="ctl tg"><span>Drawn letters</span><button id="drawn" class="sw"></button></div>
-        <div class="ctl tg"><span>Effects</span><button id="fx" class="sw"></button></div>
+        <div class="ctl tg"><span>대체 글자</span><button id="alt" class="sw"></button></div>
+        <div class="ctl tg"><span>흔들림</span><button id="jit" class="sw"></button></div>
+        <div class="ctl tg"><span>손그림 글자</span><button id="drawn" class="sw"></button></div>
+        <div class="ctl tg"><span>효과</span><button id="fx" class="sw"></button></div>
       </section>
 
       <section>
-        <div class="k">Tone</div>
+        <div class="k">색</div>
         <div id="presets" class="tones"></div>
       </section>
 
       <section class="acts">
-        <button id="dlSvg">SVG ↓</button><button id="dlPng">PNG ↓</button><button id="copySvg">copy SVG</button>
+        <button id="dlSvg">SVG 저장</button><button id="dlPng">PNG 저장</button><button id="copySvg">SVG 복사</button>
       </section>
       <p class="hint" id="hint"></p>
     </aside>
 
     <section class="stage" id="stage" aria-live="polite"></section>
-  </main>
+  </main>
 </body>
 </html>
