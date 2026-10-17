@@ -139,8 +139,8 @@ function bind() {
   const current = () => (state.mode === 'one' && last ? last : { C: build(styleById[state.style]) });
   $('#dlSvg').addEventListener('click', () => download(new Blob([svgOf(current().C)], { type: 'image/svg+xml' }), fname() + '.svg'));
   $('#copySvg').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(svgOf(current().C)); flash('copied — 피그마·일러스트에 바로 붙여넣기'); }
-    catch { flash('복사가 막혀 있어요. SVG ↓ 를 써 주세요.'); }
+    try { await navigator.clipboard.writeText(svgOf(current().C)); flash('복사했어요 — 피그마·일러스트에 바로 붙여넣기'); }
+    catch { flash('복사가 막혀 있어요. SVG 저장을 써 주세요.'); }
   });
   $('#dlPng').addEventListener('click', () => {
     const { C } = current();
