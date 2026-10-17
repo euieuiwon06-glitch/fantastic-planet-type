@@ -70,7 +70,7 @@ export const STYLES = [
   {
     id: '05', name: 'Bulb Box', ko: '구근 박스',
     note: '굵은 몸통과 머리카락처럼 가는 획의 대비, 박스 안 반전 한글',
-    asc: 760, cap: 820, dsc: -220, sx: 0.8, gap: 26, space: 230, lineGap: 150,
+    asc: 790, cap: 757, dsc: -230, sx: 0.95, gap: 30, space: 260, lineGap: 170,
     box: true, koKnock: true,
     brush: {
       R: 54, thin: 0.2, cpow: 1.15, waist: -0.06, dot: 1.2, close: 0.3, step: 7,
