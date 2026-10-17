@@ -32,6 +32,7 @@ const ink = () => TONES[state.tone][0], paper = () => TONES[state.tone][1];
 // 주소로 공유: ?t=문구&s=07&mode=all
 const qs = new URLSearchParams(location.search);
 if (qs.get('t')) state.text = qs.get('t');
+state.text = state.text.replace(/[ᄀ-ᇿ㄰-㆏가-힣]/g, '');
 if (qs.get('s') && styleById[qs.get('s')]) state.style = qs.get('s');
 const startMode = ['one', 'all', 'sketch'].includes(qs.get('mode')) ? qs.get('mode') : 'one';
 
@@ -116,7 +117,24 @@ function setMode(m) {
 function bind() {
   const txt = $('#txt');
   txt.value = state.text;
-  txt.addEventListener('input', () => { state.text = txt.value; store.set('text', state.text); schedule(); });
+  // 한글은 입력받지 않는다 (조합 중엔 기다렸다가 끝나면 지움)
+  const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힣]/g;
+  let composing = false;
+  const strip = () => {
+    if (!HANGUL.test(txt.value)) return;
+    HANGUL.lastIndex = 0;
+    const pos = txt.selectionStart - (txt.value.slice(0, txt.selectionStart).match(HANGUL) || []).length;
+    txt.value = txt.value.replace(HANGUL, '');
+    txt.setSelectionRange(pos, pos);
+    flash('한글은 입력할 수 없어요 — 영문·숫자·기호만 가능해요');
+  };
+  txt.addEventListener('compositionstart', () => { composing = true; });
+  txt.addEventListener('compositionend', () => { composing = false; strip(); state.text = txt.value; store.set('text', state.text); schedule(); });
+  txt.addEventListener('input', () => {
+    if (composing) return;
+    strip();
+    state.text = txt.value; store.set('text', state.text); schedule();
+  });
   const range = (id, fmt) => {
     const el = $('#' + id), out = $('#' + id + 'V');
     el.value = state[id];

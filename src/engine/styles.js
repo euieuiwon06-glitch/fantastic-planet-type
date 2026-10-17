@@ -69,7 +69,7 @@ export const STYLES = [
   },
   {
     id: '05', name: 'Bulb Box', ko: '구근 박스',
-    note: '굵은 몸통과 머리카락처럼 가는 획의 대비, 박스 안 반전 한글',
+    note: '굵은 몸통과 머리카락처럼 가는 획의 대비, 박스 안에 담기는 글자',
     asc: 790, cap: 757, dsc: -230, sx: 0.95, gap: 30, space: 260, lineGap: 170,
     box: true, koKnock: true,
     brush: {
