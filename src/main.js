@@ -60,9 +60,10 @@ function render() {
   if (state.mode === 'one') {
     const st = styleById[state.style];
     const t0 = performance.now();
-    const C = build(st);
-    last = { C, st };
-    stage.innerHTML = `<div class="meta"><span>${st.name} <span class="d">— ${st.note}</span></span><span>${st.id} / 07</span></div><div class="art">${svgOf(C)}</div>`;
+    const empty = !state.text.trim();
+    const C = empty ? null : build(st);
+    last = C ? { C, st } : null;
+    stage.innerHTML = `<div class="meta"><span>${st.name} <span class="d">— ${st.note}</span></span><span>${st.id} / 07</span></div><div class="art">${C ? svgOf(C) : ''}</div>`;
     $('#hint').textContent = `${Math.round(performance.now() - t0)} ms`;
     return;
   }
@@ -73,7 +74,7 @@ function render() {
     const st = STYLES[i++];
     const el = stage.querySelector(`[data-id="${st.id}"] .art`);
     el.classList.remove('pending');
-    el.innerHTML = svgOf(build(st), Math.min(state.size, 110) / 1000);
+    el.innerHTML = state.text.trim() ? svgOf(build(st), Math.min(state.size, 110) / 1000) : '';
     el.onclick = () => { state.style = st.id; store.set('style', st.id); setMode('one'); };
     setTimeout(step, 0);
   };
@@ -136,7 +137,7 @@ function bind() {
   document.querySelectorAll('.mode').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
   const fname = () => `${(state.text.trim().split('\n')[0] || 'type').slice(0, 24).replace(/[\\/:*?"<>|\s]+/g, '_')}_${state.style}`;
-  const current = () => (state.mode === 'one' && last ? last : { C: build(styleById[state.style]) });
+  const current = () => (state.mode === 'one' && last ? last : { C: build(styleById[state.style], state.text.trim() ? state.text : ' ') });
   $('#dlSvg').addEventListener('click', () => download(new Blob([svgOf(current().C)], { type: 'image/svg+xml' }), fname() + '.svg'));
   $('#copySvg').addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(svgOf(current().C)); flash('복사했어요 — 피그마·일러스트에 바로 붙여넣기'); }

@@ -102,7 +102,7 @@ export function compose(L, st, opts = {}) {
   }
   const bb = all.length ? bbox(all) : { x0: 0, y0: 0, x1: 100, y1: 100 };
   let vb = { x: bb.x0 - pad, y: bb.y0 - pad, w: bb.x1 - bb.x0 + pad * 2, h: bb.y1 - bb.y0 + pad * 2 };
-  if (box) {
+  if (box && all.length) {
     const bx = { x: bb.x0 - pad * 0.9, y: bb.y0 - pad * 0.9, w: bb.x1 - bb.x0 + pad * 1.8, h: bb.y1 - bb.y0 + pad * 1.8 };
     const rect = [[bx.x, bx.y], [bx.x + bx.w, bx.y], [bx.x + bx.w, bx.y + bx.h], [bx.x, bx.y + bx.h]];
     layers.push({ role: 'box', d: polysToPath(ko.length ? difference([rect], union(ko)) : [rect], 1, false) });
