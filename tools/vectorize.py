@@ -166,15 +166,16 @@ def smooth_contour(c, csig, corner_ang=45):
     k = max(4, int(csig * 2.5))
     r0 = int(csig * 2)
     w0 = np.exp(-0.5 * (np.arange(-r0, r0 + 1) / (csig * 0.7)) ** 2)
-    pre = np.stack([np.convolve(np.r_[p[-r0:, d], p[:, d], p[:r0, d]], w0 / w0.sum(), 'valid') for d in range(2)], 1)
+    wr0 = np.arange(-r0, n + r0) % n
+    pre = np.stack([np.convolve(p[wr0, d], w0 / w0.sum(), 'valid') for d in range(2)], 1)
     cs = find_corners(pre, k, corner_ang) if corner_ang else []
     r = int(csig * 3)
     w = np.exp(-0.5 * (np.arange(-r, r + 1) / csig) ** 2)
     out = p.copy()
     if not cs:
+        wrap = np.arange(-r, n + r) % n          # 둘레가 짧은 고리도 안전하게 감싸기
         for d in range(2):
-            ext = np.r_[p[-r:, d], p[:, d], p[:r, d]]
-            out[:, d] = np.convolve(ext, w / w.sum(), 'valid')
+            out[:, d] = np.convolve(p[wrap, d], w / w.sum(), 'valid')
         return out
     # 코너 사이 구간마다 따로 펴고, 코너 근처는 코너 쪽으로 덜 움직이게(끝점 고정)
     for j in range(len(cs)):
@@ -186,8 +187,8 @@ def smooth_contour(c, csig, corner_ang=45):
             continue
         sm = np.empty_like(seg)
         for d in range(2):
-            ext = np.r_[2 * seg[0, d] - seg[r:0:-1, d] if m > r else np.full(r, seg[0, d]), seg[:, d],
-                        2 * seg[-1, d] - seg[-2:-r - 2:-1, d] if m > r + 1 else np.full(r, seg[-1, d])]
+            # 끝점 고정: 짧은 구간은 끝값 반복, 긴 구간은 점대칭 반사로 바깥을 채운다
+            ext = np.pad(seg[:, d], r, mode='reflect', reflect_type='odd') if m > r + 1 else np.pad(seg[:, d], r, mode='edge')
             sm[:, d] = np.convolve(ext, w / w.sum(), 'valid')[:m]
         out[idx[1:-1]] = sm[1:-1]
     return out

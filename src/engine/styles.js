@@ -38,7 +38,7 @@ export const STYLES = [
   {
     id: '03', name: 'Interlock', ko: '맞물린 블록',
     note: '아주 굵은 획이 서로 겹쳐 맞물리고, 흰 틈으로 글자를 가름',
-    asc: 820, cap: 930, dsc: -200, sx: 1.22, gap: -80, space: 230, lineGap: 90,
+    asc: 840, cap: 822, dsc: -220, sx: 1.22, gap: -36, space: 260, lineGap: 120,
     halo: 15, jitter: { rot: 1.2, dy: 10 },
     brush: {
       R: 84, thin: 0.58, waist: 0.04, wobble: 0.07, dot: 1.15, close: 0.3, step: 8,
@@ -54,7 +54,7 @@ export const STYLES = [
   {
     id: '04', name: 'Blob', ko: '말랑 블롭',
     note: '모든 끝이 동그란 방울, 이웃 글자와 녹아 붙음',
-    asc: 1000, cap: 1150, dsc: -270, sx: 1.05, gap: 6, space: 270, lineGap: 120,
+    asc: 860, cap: 798, dsc: -270, sx: 1.05, gap: 34, space: 270, lineGap: 120,
     merge: 0.32, jitter: { rot: 1.5, dy: 12 },
     brush: {
       R: 72, thin: 1, waist: 0.12, dot: 1.45, close: 0.6, step: 7,

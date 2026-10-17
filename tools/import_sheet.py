@@ -63,7 +63,51 @@ def group_row(r):
     return groups
 
 
+# 자동으로 가리기 어려운 경우의 스타일별 보정: {줄: [('merge', i) = i와 i+1 합치기, ('split', i) = i를 둘로]}
+FIXES = {}
+
+
+def merge_at(groups, i):
+    a, b = groups[i], groups[i + 1]
+    m = a['mask'] | b['mask']
+    yy, xx = np.where(m)
+    g = {'mask': m, 'x0': xx.min(), 'x1': xx.max(), 'y0': yy.min(), 'y1': yy.max(), 'a': a['a'] + b['a'], 'ks': []}
+    return groups[:i] + [g] + groups[i + 2:]
+
+
+def split_widest(groups, i=None):
+    """맞닿은 두 글자: 가장 넓은 덩어리를 좌·우 가장 굵은 점을 시드로 워터셰드 -> 가장 가는 목에서 갈라짐"""
+    if i is None:
+        med = np.median([g['x1'] - g['x0'] for g in groups])
+        i = max(range(len(groups)), key=lambda j: (groups[j]['x1'] - groups[j]['x0']) / med)
+    g = groups[i]
+    x0, x1, y0, y1 = g['x0'], g['x1'] + 1, g['y0'], g['y1'] + 1
+    sub = g['mask'][y0:y1, x0:x1]
+    W = x1 - x0
+    # 맞닿은 가시는 세로로 잉크가 가장 적은 곳: 가운데 범위에서 잉크 최소 세로줄로 자른다
+    col = sub.sum(0).astype(float)
+    col = np.convolve(col, np.ones(5) / 5, 'same')
+    a, b = int(W * 0.25), int(W * 0.75)
+    cut = a + int(np.argmin(col[a:b]))
+    ws = np.zeros(sub.shape, np.int32)
+    ws[:, :cut][sub[:, :cut]] = 1
+    ws[:, cut:][sub[:, cut:]] = 2
+    out = []
+    for lab_ in (1, 2):
+        m = np.zeros_like(g['mask']); m[y0:y1, x0:x1] = ws == lab_
+        yy, xx = np.where(m)
+        out.append({'mask': m, 'x0': xx.min(), 'x1': xx.max(), 'y0': yy.min(), 'y1': yy.max(), 'a': len(xx), 'ks': []})
+    return groups[:i] + out + groups[i + 1:]
+
+
 rows = [group_row(r) for r in range(4)]
+for r in range(4):
+    while len(rows[r]) < len(ROWS[r]):
+        rows[r] = split_widest(rows[r])
+# 보정은 자동 분할 뒤의 순서 기준
+for r, ops in FIXES.get(SID, {}).items():
+    for op, i in ops:
+        rows[r] = merge_at(rows[r], i) if op == 'merge' else split_widest(rows[r], i)
 for r, (g, chars) in enumerate(zip(rows, ROWS)):
     if len(g) != len(chars):
         raise SystemExit(f'{r}번째 줄: 덩어리 {len(g)}개 / 글자 {len(chars)}개  ' + str([(int(x['x0']), int(x['x1']), int(x['y0']), int(x['y1']), int(x['a'])) for x in g]))
