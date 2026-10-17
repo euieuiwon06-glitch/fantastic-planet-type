@@ -88,7 +88,7 @@ export const STYLES = [
   {
     id: '06', name: 'Nouveau', ko: '아르누보',
     note: '허리가 잘록한 줄기, 뾰족하게 퍼지는 세리프와 작은 물방울',
-    asc: 750, cap: 830, dsc: -230, sx: 0.82, gap: 36, space: 250, lineGap: 150,
+    asc: 860, cap: 894, dsc: -260, sx: 0.9, gap: 40, space: 250, lineGap: 150,
     brush: {
       R: 30, thin: 0.5, waist: 0.3, dot: 1.3, close: 0.3, step: 7,
       ends: {
@@ -103,7 +103,7 @@ export const STYLES = [
   {
     id: '07', name: 'Groovy', ko: '70s 그루비',
     note: '굵은 몸통, 나팔처럼 퍼지는 바닥, 동글게 말린 끝',
-    asc: 790, cap: 790, dsc: -220, sx: 0.96, gap: 24, space: 250, lineGap: 140,
+    asc: 760, cap: 717, dsc: -230, sx: 1.0, gap: 26, space: 250, lineGap: 140,
     brush: {
       R: 58, thin: 0.6, waist: 0.2, dot: 1.25, close: 0.35, step: 7,
       ends: {

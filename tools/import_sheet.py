@@ -1,0 +1,96 @@
+# 알파벳 시트 한 장(대문자 A-M / N-Z / 소문자 a-m / n-z 4줄) -> 글자별 벡터, drawn.json 의 해당 스타일 교체
+# 사용: python tools/import_sheet.py 06 <이미지> src/data/drawn.json
+import sys, os, json, re, numpy as np, cv2
+sys.path.insert(0, os.path.dirname(__file__))
+from vectorize import mask_to_path
+
+SID, IMG, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
+UP = 3
+ROWS = ['ABCDEFGHIJKLM', 'NOPQRSTUVWXYZ', 'abcdefghijklm', 'nopqrstuvwxyz']
+XREF = 'acemnorsuvwxz'          # 엑스하이트·기준선 측정용 소문자
+CREF = 'EFHIKLMNTUVXZ'          # 대문자 높이 측정용
+
+
+def load(path):
+    im = cv2.imdecode(np.fromfile(path, np.uint8), cv2.IMREAD_GRAYSCALE).astype(np.float32) / 255
+    cov = 1 - im
+    m = (cov > 0.5).astype(np.uint8)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(m, 8)
+    keep = np.zeros(n, bool); keep[1:] = st[1:, 4] >= 20
+    cov[~keep[lab] & (m > 0)] = 0
+    # 작은 홈만 메움 (가는 획을 끊는 깎기는 하지 않음)
+    m = (cov > 0.5).astype(np.uint8)
+    m2 = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
+    ch = m2 != m; cov[ch] = m2[ch]
+    return cov
+
+
+cov = load(IMG)
+m = (cov > 0.5).astype(np.uint8)
+n, lab, st, cen = cv2.connectedComponentsWithStats(m, 8)
+ids = [k for k in range(1, n) if st[k][4] >= 20]
+
+# 줄 나누기: 큰 덩어리 중심 y를 4묶음으로 (작은 점은 나중에 가까운 줄로)
+bigs = sorted([k for k in ids if st[k][3] > 0.25 * np.median([st[j][3] for j in ids])], key=lambda k: cen[k][1])
+ys = [cen[k][1] for k in bigs]
+gi = sorted(range(len(ys) - 1), key=lambda i: ys[i + 1] - ys[i])[-3:]
+cuts = sorted((ys[i] + ys[i + 1]) / 2 for i in gi)
+row_of = lambda y: sum(y >= c for c in cuts)
+
+
+def group_row(r):
+    comps = sorted([k for k in ids if row_of(cen[k][1]) == r], key=lambda k: st[k][0])
+    groups = []
+    for k in comps:
+        x, w = st[k][0], st[k][2]
+        if groups:
+            g = groups[-1]
+            ov = min(g['x1'], x + w) - max(g['x0'], x)
+            if ov > 0.45 * min(w, g['x1'] - g['x0']):
+                g['ks'].append(k); g['x0'] = min(g['x0'], x); g['x1'] = max(g['x1'], x + w); continue
+        groups.append({'ks': [k], 'x0': x, 'x1': x + w})
+    for g in groups:
+        mask = np.isin(lab, g['ks'])
+        yy, xx = np.where(mask)
+        g.update(mask=mask, y0=yy.min(), y1=yy.max(), x0=xx.min(), x1=xx.max())
+    return groups
+
+
+rows = [group_row(r) for r in range(4)]
+for r, (g, chars) in enumerate(zip(rows, ROWS)):
+    if len(g) != len(chars):
+        raise SystemExit(f'{r}번째 줄: 덩어리 {len(g)}개 / 글자 {len(chars)}개  x={[int(x["x0"]) for x in g]}')
+
+
+def med(gl, chars, which, key):
+    return float(np.median([g[key] for g, c in zip(gl, chars) if c in which]))
+
+
+# 소문자 줄별 기준선, 엑스하이트 → 500 단위
+xh = np.mean([med(rows[r], ROWS[r], XREF, 'y1') - med(rows[r], ROWS[r], XREF, 'y0') for r in (2, 3)])
+k = 500.0 / xh
+cap = np.mean([med(rows[r], ROWS[r], CREF, 'y1') - med(rows[r], ROWS[r], CREF, 'y0') for r in (0, 1)])
+print(SID, 'xh px', round(xh, 1), 'cap/xh', round(cap / xh, 3))
+
+
+def vec(g, base):
+    pad = 6
+    y0, y1, x0, x1 = max(0, g['y0'] - pad), g['y1'] + pad, max(0, g['x0'] - pad), g['x1'] + pad
+    sub = cov[y0:y1, x0:x1] * cv2.dilate(g['mask'][y0:y1, x0:x1].astype(np.uint8), np.ones((5, 5)))
+    big = cv2.resize(sub, None, fx=UP, fy=UP, interpolation=cv2.INTER_CUBIC)
+    d = mask_to_path(big, scale=k / UP, ox=(x0 - g['x0']) * k, oy=(y0 - base) * k,
+                     sigma=1.4, step=9.0, corner_ang=45)
+    return re.sub(r'-?\d+\.\d+', lambda mm: str(int(round(float(mm.group())))), d)
+
+
+res = []
+for r in range(4):
+    ref = XREF if r >= 2 else CREF
+    base = med(rows[r], ROWS[r], ref, 'y1')
+    for g, c in zip(rows[r], ROWS[r]):
+        res.append({'ch': c, 'd': vec(g, base)})
+
+data = json.load(open(OUT, encoding='utf-8'))
+data[SID] = res
+json.dump(data, open(OUT, 'w', encoding='utf-8'), separators=(',', ':'), ensure_ascii=False)
+print(SID, 'glyphs', len(res), 'cap units', round(cap * k), 'drawn.json KB', os.path.getsize(OUT) // 1024)
