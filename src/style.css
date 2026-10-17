@@ -18,9 +18,11 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 /* 상단: 이름 · 소문자 내비 · 나선 */
 .top {
   position: sticky; top: 0; z-index: 5; background: var(--bg);
-  display: grid; grid-template-columns: 284px 1fr; align-items: center;
-  padding: 16px;
+  /* 아래 본문과 같은 칸(300px | 나머지)을 써서 메뉴와 내용 시작점이 항상 같게 */
+  display: grid; grid-template-columns: 300px 1fr; align-items: center;
+  padding: 16px 16px 16px 0;
 }
+.name { padding-left: 16px; }
 .mode { padding: 0 1px; }
 .mode.on { color: var(--mute); }
 .mode:not(.on):hover { text-decoration: underline; text-underline-offset: 2px; }
@@ -88,7 +90,8 @@ input[type='range']::-moz-range-thumb { width: 7px; height: 7px; background: var
 .row .dl { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
 
 @media (max-width: 860px) {
-  .top { grid-template-columns: 1fr auto; gap: 12px; }
+  .top { grid-template-columns: 1fr; gap: 8px; padding: 16px; }
+  .name { padding-left: 0; }
   .wrap { grid-template-columns: 1fr; }
   .side { position: static; max-height: none; padding: 16px; }
   .stage { padding: 0 16px 48px; }
