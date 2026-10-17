@@ -24,7 +24,7 @@ const state = {
   style: store.get('style', '07'),
   mode: 'one',
   size: store.get('size', 140), track: store.get('track', 0), lead: store.get('lead', 100), align: store.get('align', 'center'),
-  alt: store.get('alt', true), jit: store.get('jit', true), drawn: store.get('drawn', true), fx: store.get('fx', true),
+  alt: store.get('alt', true), jit: store.get('jit', true), fx: store.get('fx', true),
   tone: store.get('tone2', 0),
 };
 const ink = () => TONES[state.tone][0], paper = () => TONES[state.tone][1];
@@ -40,7 +40,7 @@ const startMode = ['one', 'all', 'sketch'].includes(qs.get('mode')) ? qs.get('mo
 function build(st, text = state.text, exact = false) {
   const L = layout(text || ' ', st, {
     tracking: state.track, leading: state.lead / 100, align: state.align,
-    alternates: state.alt, jitter: state.jit, generatedOnly: !state.drawn,
+    alternates: state.alt, jitter: state.jit,
   });
   return compose(L, st, { merge: state.fx, halo: state.fx, box: state.fx && !!st.box, knock: state.fx, exact });
 }
@@ -150,7 +150,7 @@ function bind() {
     b.classList.toggle('on', b.dataset.v === state.align);
     b.addEventListener('click', () => { state.align = b.dataset.v; store.set('align', state.align); al.forEach((x) => x.classList.toggle('on', x === b)); schedule(); });
   });
-  for (const k of ['alt', 'jit', 'drawn', 'fx']) {
+  for (const k of ['alt', 'jit', 'fx']) {
     const el = $('#' + k);
     el.classList.toggle('on', state[k]); el.setAttribute('aria-pressed', state[k]);
     el.addEventListener('click', () => {
