@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fantastic Planet Type</title>
+  <meta name="description" content="손그림 스케치 7종을 아무 문구에 적용하는 타이포그래피 실험" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet" />
+  <script type="module" crossorigin src="./assets/index-BsA5c-g1.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-xqChbE1c.css">
+</head>
+<body>
+  <header class="top">
+    <div class="name">Fantastic Planet</div>
+    <nav class="modes" aria-label="보기">
+      <button class="mode" data-mode="one">type</button>,<button class="mode" data-mode="all">compare</button>,<button class="mode" data-mode="sketch">sketches</button>
+    </nav>
+    <svg class="spiral" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12m0 0a1.5 1.5 0 1 1 1.5 1.5a3 3 0 1 1 -3 -3a4.5 4.5 0 1 1 4.5 4.5a6 6 0 1 1 -6 -6a7.5 7.5 0 1 1 7.5 7.5" fill="none" stroke="currentColor" stroke-width="1.1"/></svg>
+  </header>
+
+  <main class="wrap">
+    <aside class="side">
+      <section>
+        <label class="k" for="txt">Text</label>
+        <textarea id="txt" rows="2" spellcheck="false"></textarea>
+      </section>
+
+      <section>
+        <div class="k">Style</div>
+        <ol id="styles" class="list"></ol>
+      </section>
+
+      <section class="ctrls">
+        <label class="ctl"><span>Size</span><input id="size" type="range" min="40" max="320" /><b id="sizeV"></b></label>
+        <label class="ctl"><span>Tracking</span><input id="track" type="range" min="-150" max="300" /><b id="trackV"></b></label>
+        <label class="ctl"><span>Leading</span><input id="lead" type="range" min="60" max="180" /><b id="leadV"></b></label>
+        <div class="ctl"><span>Align</span><span class="opts" id="align"><button data-v="left">left</button> / <button data-v="center">center</button> / <button data-v="right">right</button></span></div>
+      </section>
+
+      <section class="ctrls">
+        <div class="ctl tg"><span>Alternates</span><button id="alt" class="sw"></button></div>
+        <div class="ctl tg"><span>Wobble</span><button id="jit" class="sw"></button></div>
+        <div class="ctl tg"><span>Drawn letters</span><button id="drawn" class="sw"></button></div>
+        <div class="ctl tg"><span>Effects</span><button id="fx" class="sw"></button></div>
+      </section>
+
+      <section>
+        <div class="k">Tone</div>
+        <div id="presets" class="tones"></div>
+      </section>
+
+      <section class="acts">
+        <button id="dlSvg">SVG ↓</button><button id="dlPng">PNG ↓</button><button id="copySvg">copy SVG</button>
+      </section>
+      <p class="hint" id="hint"></p>
+    </aside>
+
+    <section class="stage" id="stage" aria-live="polite"></section>
+  </main>
+</body>
+</html>
