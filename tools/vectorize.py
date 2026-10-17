@@ -156,13 +156,53 @@ def catmull_closed(p, corners=()):
     return out
 
 
+def smooth_contour(c, csig, corner_ang=45):
+    """윤곽선을 선을 따라 가우시안으로 고르게 편다(우글거림 제거). 뾰족한 코너 점은 고정."""
+    p = resample(c, 1.0)
+    n = len(p)
+    if n < 12 or csig <= 0:
+        return p
+    # 코너는 미리 한 번 편 윤곽에서 넓은 범위로 판정 -> 우글거림을 코너로 오인하지 않게
+    k = max(4, int(csig * 2.5))
+    r0 = int(csig * 2)
+    w0 = np.exp(-0.5 * (np.arange(-r0, r0 + 1) / (csig * 0.7)) ** 2)
+    pre = np.stack([np.convolve(np.r_[p[-r0:, d], p[:, d], p[:r0, d]], w0 / w0.sum(), 'valid') for d in range(2)], 1)
+    cs = find_corners(pre, k, corner_ang) if corner_ang else []
+    r = int(csig * 3)
+    w = np.exp(-0.5 * (np.arange(-r, r + 1) / csig) ** 2)
+    out = p.copy()
+    if not cs:
+        for d in range(2):
+            ext = np.r_[p[-r:, d], p[:, d], p[:r, d]]
+            out[:, d] = np.convolve(ext, w / w.sum(), 'valid')
+        return out
+    # 코너 사이 구간마다 따로 펴고, 코너 근처는 코너 쪽으로 덜 움직이게(끝점 고정)
+    for j in range(len(cs)):
+        a, b = cs[j], cs[(j + 1) % len(cs)]
+        idx = np.arange(a, b + 1) if b > a else np.r_[np.arange(a, n), np.arange(0, b + 1)]
+        seg = p[idx]
+        m = len(seg)
+        if m < 5:
+            continue
+        sm = np.empty_like(seg)
+        for d in range(2):
+            ext = np.r_[2 * seg[0, d] - seg[r:0:-1, d] if m > r else np.full(r, seg[0, d]), seg[:, d],
+                        2 * seg[-1, d] - seg[-2:-r - 2:-1, d] if m > r + 1 else np.full(r, seg[-1, d])]
+            sm[:, d] = np.convolve(ext, w / w.sum(), 'valid')[:m]
+        out[idx[1:-1]] = sm[1:-1]
+    return out
+
+
 def mask_to_path(mask, scale=1.0, ox=0.0, oy=0.0, sigma=1.4, step=5.0, err=None,
-                 corner_ang=70, corner_k=3, flip_y=False, min_len=20):
-    """mask(px) -> SVG path d. 좌표 = (px*scale + ox, py*scale + oy) (flip_y면 y 부호 반전)"""
+                 corner_ang=70, corner_k=3, flip_y=False, min_len=20, csmooth=0.0):
+    """mask(px) -> SVG path d. 좌표 = (px*scale + ox, py*scale + oy) (flip_y면 y 부호 반전)
+    csmooth: 윤곽선을 선 방향으로 펴는 세기(px). 저해상도 원본의 우글거림 제거용"""
     d = []
     for c in contours(mask, sigma):
         if len(c) < min_len:
             continue
+        if csmooth:
+            c = smooth_contour(c, csmooth, corner_ang)
         p = resample(c, step)
         if len(p) < 6:
             continue

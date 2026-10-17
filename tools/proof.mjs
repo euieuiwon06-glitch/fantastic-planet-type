@@ -13,7 +13,7 @@ for (const st of STYLES) {
     const t0 = Date.now();
     const L = layout(t, st, { generatedOnly: gen });
     const C = compose(L, st);
-    html += toSVG(C, { width: Math.min(1700, Math.round(C.vb.w / 4.2)) }).replace('<svg ', '<svg style="display:block;margin:4px 0;max-width:100%;height:auto" ');
+    html += toSVG(C, { width: process.env.W ? +process.env.W : Math.min(1700, Math.round(C.vb.w / 4.2)) }).replace('<svg ', '<svg style="display:block;margin:4px 0;max-width:100%;height:auto" ');
     process.stderr.write(`${st.id} ${t.slice(0, 12)} ${Date.now() - t0}ms\n`);
   }
   html += '</div>';

@@ -22,7 +22,7 @@ export const STYLES = [
   {
     id: '02', name: 'Needle', ko: '바늘 가시',
     note: '01보다 가늘고 날카롭게, 획 끝이 길게 찔러 나감',
-    asc: 1030, cap: 1200, dsc: -290, sx: 1.16, gap: 30, space: 300, lineGap: 160,
+    asc: 880, cap: 847, dsc: -300, sx: 1.05, gap: 30, space: 300, lineGap: 170,
     jitter: { rot: 2.6, dy: 16 },
     brush: {
       R: 40, thin: 0.46, waist: -0.36, wobble: 0.1, dot: 1.4, close: 0.4, step: 7,

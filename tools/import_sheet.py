@@ -6,6 +6,8 @@ from vectorize import mask_to_path
 
 SID, IMG, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 UP = 3
+# 윤곽 펴기 세기(원본 px): 원본 해상도가 낮을수록(글자가 작을수록) 크게
+CS = float(os.environ.get('CS', '3.0'))
 ROWS = ['ABCDEFGHIJKLM', 'NOPQRSTUVWXYZ', 'abcdefghijklm', 'nopqrstuvwxyz']
 XREF = 'acemnorsuvwxz'          # 엑스하이트·기준선 측정용 소문자
 CREF = 'EFHIKLMNTUVXZ'          # 대문자 높이 측정용
@@ -46,9 +48,14 @@ def group_row(r):
         if groups:
             g = groups[-1]
             ov = min(g['x1'], x + w) - max(g['x0'], x)
-            if ov > 0.45 * min(w, g['x1'] - g['x0']):
-                g['ks'].append(k); g['x0'] = min(g['x0'], x); g['x1'] = max(g['x1'], x + w); continue
-        groups.append({'ks': [k], 'x0': x, 'x1': x + w})
+            # 가로로 겹쳐도 둘 다 큰 덩어리면 다른 글자(가시가 겹친 경우). 작은 조각(i·j 점 등)만 묶는다
+            small = min(st[k][4], g['a']) < 0.3 * max(st[k][4], g['a'])
+            y, h = st[k][1], st[k][3]
+            apart = y + h < g['y0'] or y > g['y1']        # 위아래로 완전히 떨어진 조각(점)
+            if ov > 0.45 * min(w, g['x1'] - g['x0']) and (small or apart):
+                g['ks'].append(k); g['x0'] = min(g['x0'], x); g['x1'] = max(g['x1'], x + w); g['a'] += st[k][4]
+                g['y0'] = min(g['y0'], y); g['y1'] = max(g['y1'], y + h); continue
+        groups.append({'ks': [k], 'x0': x, 'x1': x + w, 'a': st[k][4], 'y0': st[k][1], 'y1': st[k][1] + st[k][3]})
     for g in groups:
         mask = np.isin(lab, g['ks'])
         yy, xx = np.where(mask)
@@ -59,7 +66,7 @@ def group_row(r):
 rows = [group_row(r) for r in range(4)]
 for r, (g, chars) in enumerate(zip(rows, ROWS)):
     if len(g) != len(chars):
-        raise SystemExit(f'{r}번째 줄: 덩어리 {len(g)}개 / 글자 {len(chars)}개  x={[int(x["x0"]) for x in g]}')
+        raise SystemExit(f'{r}번째 줄: 덩어리 {len(g)}개 / 글자 {len(chars)}개  ' + str([(int(x['x0']), int(x['x1']), int(x['y0']), int(x['y1']), int(x['a'])) for x in g]))
 
 
 def med(gl, chars, which, key):
@@ -79,7 +86,7 @@ def vec(g, base):
     sub = cov[y0:y1, x0:x1] * cv2.dilate(g['mask'][y0:y1, x0:x1].astype(np.uint8), np.ones((5, 5)))
     big = cv2.resize(sub, None, fx=UP, fy=UP, interpolation=cv2.INTER_CUBIC)
     d = mask_to_path(big, scale=k / UP, ox=(x0 - g['x0']) * k, oy=(y0 - base) * k,
-                     sigma=1.4, step=9.0, corner_ang=45)
+                     sigma=1.4, step=8.0, corner_ang=38, csmooth=CS * UP)
     return re.sub(r'-?\d+\.\d+', lambda mm: str(int(round(float(mm.group())))), d)
 
 
