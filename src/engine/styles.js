@@ -6,7 +6,7 @@ export const STYLES = [
   {
     id: '01', name: 'Thorn Drip', ko: '가시 물방울',
     note: '굵게 부푼 줄기 끝이 가시로 뻗고, 바닥은 녹아 흘러내림',
-    asc: 1030, cap: 1150, dsc: -270, sx: 1.12, gap: 34, space: 300, lineGap: 160,
+    asc: 900, cap: 888, dsc: -280, sx: 1.05, gap: 36, space: 300, lineGap: 170,
     jitter: { rot: 2.2, dy: 14 },
     brush: {
       R: 50, thin: 0.6, waist: -0.32, wobble: 0.1, dot: 1.25, close: 0.45, step: 7,
