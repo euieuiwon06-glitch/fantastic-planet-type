@@ -1,6 +1,9 @@
 // 엔진 시험 렌더: 스타일별로 여러 문구를 SVG로 뽑아 HTML 한 장에 모은다
 import { STYLES } from '../src/engine/styles.js';
 import { layout, compose, toSVG } from '../src/engine/layout.js';
+import { registerDrawn } from '../src/engine/glyphs.js';
+import ALL from '../src/data/drawn.json';
+for (const [id, list] of Object.entries(ALL)) registerDrawn(id, list);
 import fs from 'node:fs';
 const texts = (process.env.TEXTS || 'Fantastic Planet|abcdefghijklm|nopqrstuvwxyz|ABCDEFGHIJKLM|NOPQRSTUVWXYZ|0123456789 !?&|판타스틱 플래닛').split('|');
 const only = process.env.ONLY ? process.env.ONLY.split(',') : null;

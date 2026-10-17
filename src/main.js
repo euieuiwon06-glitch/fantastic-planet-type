@@ -1,6 +1,14 @@
 import './style.css';
 import { STYLES, styleById } from './engine/styles.js';
 import { layout, compose, toSVG } from './engine/layout.js';
+import { registerDrawn, hasDrawn, clearGlyphCache } from './engine/glyphs.js';
+
+// 손그림 글자는 스타일별 파일을 고를 때 내려받는다
+const loading = {};
+function ensure(id) {
+  if (hasDrawn(id)) return Promise.resolve();
+  return (loading[id] ||= fetch(`glyphs/${id}.json`).then((r) => r.json()).then((list) => { registerDrawn(id, list); clearGlyphCache(); }).catch(() => {}));
+}
 
 const $ = (s) => document.querySelector(s);
 const store = {
@@ -28,12 +36,12 @@ if (qs.get('s') && styleById[qs.get('s')]) state.style = qs.get('s');
 const startMode = ['one', 'all', 'sketch'].includes(qs.get('mode')) ? qs.get('mode') : 'one';
 
 // ---------- 렌더 ----------
-function build(st, text = state.text) {
+function build(st, text = state.text, exact = false) {
   const L = layout(text || ' ', st, {
     tracking: state.track, leading: state.lead / 100, align: state.align,
     alternates: state.alt, jitter: state.jit, generatedOnly: !state.drawn,
   });
-  return compose(L, st, { merge: state.fx, halo: state.fx, box: state.fx && !!st.box, knock: state.fx });
+  return compose(L, st, { merge: state.fx, halo: state.fx, box: state.fx && !!st.box, knock: state.fx, exact });
 }
 const mix = (a, b, t) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - t) + parseInt(b.slice(i, i + 2), 16) * t).toString(16).padStart(2, '0')).join('');
 function svgOf(C, scale = state.size / 1000) {
@@ -45,8 +53,11 @@ function svgOf(C, scale = state.size / 1000) {
 const pad = (n) => String(n).padStart(2, '0');
 
 let last = null, job = 0;
-function render() {
+async function render() {
   const my = ++job;
+  if (state.mode === 'one') await ensure(state.style);
+  else if (state.mode === 'all') await Promise.all(STYLES.map((s) => ensure(s.id)));
+  if (my !== job) return;
   const stage = $('#stage');
   stage.style.setProperty('--paper', paper());
   stage.className = 'stage ' + state.mode;
@@ -137,7 +148,8 @@ function bind() {
   document.querySelectorAll('.mode').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
   const fname = () => `${(state.text.trim().split('\n')[0] || 'type').slice(0, 24).replace(/[\\/:*?"<>|\s]+/g, '_')}_${state.style}`;
-  const current = () => (state.mode === 'one' && last ? last : { C: build(styleById[state.style], state.text.trim() ? state.text : ' ') });
+  // 저장할 때는 정밀 계산(03 겹침 틈을 실제 윤곽으로)
+  const current = () => ({ C: build(styleById[state.style], state.text.trim() ? state.text : ' ', true) });
   $('#dlSvg').addEventListener('click', () => download(new Blob([svgOf(current().C)], { type: 'image/svg+xml' }), fname() + '.svg'));
   $('#copySvg').addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(svgOf(current().C)); flash('복사했어요 — 피그마·일러스트에 바로 붙여넣기'); }

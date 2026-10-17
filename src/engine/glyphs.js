@@ -2,8 +2,12 @@
 import { LATIN, LATIN_METRICS } from './skeleton.js';
 import { hangulStrokes, isHangul } from './hangul.js';
 import { renderStrokes } from './brush.js';
-import { pathToPolys, bbox } from './geom.js';
-import DRAWN from '../data/drawn.json';
+import { pathToPolys, bbox, simplify, polysToPath } from './geom.js';
+
+// 손그림 글자 데이터: 스타일별로 필요할 때 등록 (registerDrawn)
+const DRAWN = {};
+export function registerDrawn(id, list) { DRAWN[id] = list; }
+export const hasDrawn = (id) => !!DRAWN[id];
 
 const cache = new Map();
 const BAND = 20;
@@ -59,8 +63,13 @@ function profile(polys) {
 }
 
 function finish(polys, extra = {}) {
-  const bb = bbox(polys);
-  return { polys, ...bb, prof: profile(polys), ...extra };
+  // 효과 계산·간격용 가벼운 폴리곤 (점 수를 크게 줄임)
+  const lite = simplify(polys, 1.2);
+  const bb = bbox(lite);
+  const g = { polys: lite, full: polys, ...bb, prof: profile(lite), ...extra };
+  // 화면 출력용 경로: 손그림은 원본 곡선 그대로, 생성 글자는 한 번만 변환
+  if (!g.d) g.d = polysToPath(polys, 0, true);
+  return g;
 }
 
 export function drawnVariants(styleId, ch) {
@@ -81,7 +90,7 @@ export function getGlyph(st, ch, { variant = 0, generated = false } = {}) {
   let g = null;
   if (nv) {
     const src = DRAWN[st.id].filter((x) => x.ch === ch)[v];
-    g = finish(pathToPolys(src.d, 6), { drawn: true });
+    g = finish(pathToPolys(src.d, 4), { drawn: true, d: src.d });
   } else if (isHangul(ch)) {
     const strokes = koStrokes(st, ch);
     const B = st.ko_.brush ? { ...st.brush, ...st.ko_.brush, ends: { ...st.brush.ends, ...(st.ko_.brush.ends || {}) } } : st.brush;

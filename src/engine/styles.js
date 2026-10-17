@@ -55,7 +55,7 @@ export const STYLES = [
     id: '04', name: 'Blob', ko: '말랑 블롭',
     note: '모든 끝이 동그란 방울, 이웃 글자와 녹아 붙음',
     asc: 860, cap: 798, dsc: -270, sx: 1.05, gap: 34, space: 270, lineGap: 120,
-    merge: 0.32, jitter: { rot: 1.5, dy: 12 },
+    jitter: { rot: 1.5, dy: 12 },
     brush: {
       R: 72, thin: 1, waist: 0.12, dot: 1.45, close: 0.6, step: 7,
       ends: {
@@ -65,7 +65,7 @@ export const STYLES = [
         hook: { type: 'ball', size: 1.35, len: 2.0, neck: 0.25 },
       },
     },
-    ko_: { size: 1.02, rs: 0.62, sx: 1.0 },
+    ko_: { size: 1.02, rs: 0.5, sx: 1.0, brush: { close: 0.15 } },
   },
   {
     id: '05', name: 'Bulb Box', ko: '구근 박스',

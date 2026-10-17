@@ -33,7 +33,7 @@ export function intersect(a, b) {
   return fromC(out);
 }
 
-export function offset(polys, delta, arcTol = 0.6) {
+export function offset(polys, delta, arcTol = 1.5) {
   if (!polys.length || !delta) return polys;
   const co = new ClipperLib.ClipperOffset(2, arcTol * S);
   co.AddPaths(polys.map(toC), ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);

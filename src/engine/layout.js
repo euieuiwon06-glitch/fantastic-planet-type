@@ -70,52 +70,75 @@ export function layout(text, st, opts = {}) {
   return { lines: out, width: maxW, lineH };
 }
 
-function placed(it) {
+function placed(it, exact = false) {
   const { g } = it;
   const cx = (g.x0 + g.x1) / 2, cy = (g.y0 + g.y1) / 2;
-  return transform(g.polys, { dx: it.x, dy: it.y, rot: it.rot, cx, cy });
+  return transform(exact ? g.full : g.polys, { dx: it.x, dy: it.y, rot: it.rot, cx, cy });
 }
 
-/** 배치 결과 -> 레이어 목록 [{d, fill}] + 전체 영역 */
+function tf(it) {
+  const { g } = it;
+  const cx = (g.x0 + g.x1) / 2, cy = (g.y0 + g.y1) / 2;
+  const r = it.rot ? ` rotate(${((it.rot * 180) / Math.PI).toFixed(2)} ${cx.toFixed(0)} ${cy.toFixed(0)})` : '';
+  return `translate(${it.x.toFixed(1)} ${it.y.toFixed(1)})${r}`;
+}
+
+/** 배치 결과 -> 레이어 목록 [{d, role, transform?}] + 전체 영역 */
 export function compose(L, st, opts = {}) {
-  const { merge = true, halo = true, box = !!st.box, knock = !!st.koKnock, pad = 120 } = opts;
+  // exact: 저장용 — 03 겹침 틈을 실제 윤곽으로 계산. 화면에서는 배경색 테두리로 빠르게 표현
+  const { merge = true, halo = true, box = !!st.box, knock = !!st.koKnock, pad = 120, exact = false } = opts;
+  const geom = (st.halo && halo && exact) || (st.merge && merge);
+  const fastHalo = st.halo && halo && !exact ? st.halo : 0;
   const layers = [];
-  const all = [];
   const fg = [], ko = [];
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const line of L.lines) {
-    let polysLine = line.items.map((it) => ({ it, P: placed(it) }));
-    if (st.halo && halo) {
-      // 뒤 글자일수록 위: 앞 글자에서 뒤 글자 + 틈(halo)만큼 깎아 낸다
-      for (let i = 0; i < polysLine.length; i++) {
-        const later = [];
-        for (let k = i + 1; k < Math.min(polysLine.length, i + 4); k++) later.push(...polysLine[k].P);
-        if (later.length) polysLine[i].P = tidy(difference(polysLine[i].P, offset(union(later), st.halo)), { close: 0, open: 6, minArea: 900 });
+    for (const it of line.items) {
+      const m = 30;   // 흔들림 회전 여유
+      x0 = Math.min(x0, it.x + it.g.x0 - m); x1 = Math.max(x1, it.x + it.g.x1 + m);
+      y0 = Math.min(y0, it.y + it.g.y0 - m); y1 = Math.max(y1, it.y + it.g.y1 + m);
+    }
+    if (geom) {
+      // 03 겹침·04 녹아붙음: 가벼운 폴리곤으로 계산
+      const polysLine = line.items.map((it) => ({ it, P: placed(it, exact) }));
+      if (st.halo && halo) {
+        for (let i = 0; i < polysLine.length; i++) {
+          const later = [];
+          for (let k = i + 1; k < Math.min(polysLine.length, i + 4); k++) later.push(...polysLine[k].P);
+          if (later.length) polysLine[i].P = tidy(difference(polysLine[i].P, offset(union(later), st.halo, 0.6)), { close: 0, open: 6, minArea: 900 });
+        }
+      }
+      if (st.merge && merge) fg.push(...closing(union(polysLine.flatMap((x) => x.P)), st.merge * st.brush.R));
+      else for (const { P } of polysLine) fg.push(...P);
+    } else {
+      // 효과 없음: 글자 경로를 그대로 옮겨 놓기만 (빠름)
+      for (const it of line.items) {
+        if (knock && box && it.g.hangul) ko.push(...placed(it));
+        else layers.push({ role: 'ink', d: it.g.d, transform: tf(it), halo: fastHalo });
       }
     }
-    if (st.merge && merge) {
-      const u = tidy(closing(union(polysLine.flatMap((x) => x.P)), st.merge * st.brush.R));
-      fg.push(...u);
-    } else {
-      for (const { it, P } of polysLine) (knock && box && it.g.hangul ? ko : fg).push(...P);
-    }
-    for (const { P } of polysLine) all.push(...P);
   }
-  const bb = all.length ? bbox(all) : { x0: 0, y0: 0, x1: 100, y1: 100 };
-  let vb = { x: bb.x0 - pad, y: bb.y0 - pad, w: bb.x1 - bb.x0 + pad * 2, h: bb.y1 - bb.y0 + pad * 2 };
-  if (box && all.length) {
-    const bx = { x: bb.x0 - pad * 0.9, y: bb.y0 - pad * 0.9, w: bb.x1 - bb.x0 + pad * 1.8, h: bb.y1 - bb.y0 + pad * 1.8 };
+  if (!Number.isFinite(x0)) { x0 = 0; y0 = 0; x1 = 100; y1 = 100; }
+  let vb = { x: x0 - pad, y: y0 - pad, w: x1 - x0 + pad * 2, h: y1 - y0 + pad * 2 };
+  const out = [];
+  if (box && Number.isFinite(x0) && (fg.length || layers.length || ko.length)) {
+    const bx = { x: x0 - pad * 0.9, y: y0 - pad * 0.9, w: x1 - x0 + pad * 1.8, h: y1 - y0 + pad * 1.8 };
     const rect = [[bx.x, bx.y], [bx.x + bx.w, bx.y], [bx.x + bx.w, bx.y + bx.h], [bx.x, bx.y + bx.h]];
-    layers.push({ role: 'box', d: polysToPath(ko.length ? difference([rect], union(ko)) : [rect], 1, false) });
+    out.push({ role: 'box', d: polysToPath(ko.length ? difference([rect], union(ko)) : [rect], 0, false) });
     vb = { x: bx.x - pad, y: bx.y - pad, w: bx.w + pad * 2, h: bx.h + pad * 2 };
   } else if (ko.length) fg.push(...ko);
-  layers.push({ role: 'ink', d: polysToPath(fg, 1, true) });
-  return { layers, vb };
+  if (fg.length) out.push({ role: 'ink', d: polysToPath(fg, 0, true) });
+  out.push(...layers);
+  return { layers: out, vb };
 }
 
 export function toSVG(C, { ink = '#000', paper = '#fff', boxColor = '#fff', transparent = false, width } = {}) {
   const { vb } = C;
   const w = width || Math.round(vb.w / 4), h = Math.round((w * vb.h) / vb.w);
   const bg = transparent ? '' : `<rect x="${vb.x}" y="${vb.y}" width="${vb.w}" height="${vb.h}" fill="${paper}"/>`;
-  const body = C.layers.map((l) => `<path d="${l.d}" fill="${l.role === 'box' ? boxColor : ink}"/>`).join('');
+  // halo: 뒤 글자가 앞 글자를 배경색 테두리로 덮어 흰 틈을 만든다 (03)
+  const inks = C.layers.filter((l) => l.role !== 'box').map((l) => `<path d="${l.d}"${l.transform ? ` transform="${l.transform}"` : ''}${l.halo ? ` stroke="${paper}" stroke-width="${l.halo * 2}" stroke-linejoin="round" paint-order="stroke"` : ''}/>`).join('');
+  const boxes = C.layers.filter((l) => l.role === 'box').map((l) => `<path d="${l.d}" fill="${boxColor}"/>`).join('');
+  const body = `${boxes}<g fill="${ink}">${inks}</g>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.x.toFixed(0)} ${vb.y.toFixed(0)} ${vb.w.toFixed(0)} ${vb.h.toFixed(0)}" width="${w}" height="${h}">${bg}${body}</svg>`;
 }
