@@ -8,6 +8,8 @@ SID, IMG, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 UP = 3
 # 윤곽 펴기 세기(원본 px): 원본 해상도가 낮을수록(글자가 작을수록) 크게
 CS = float(os.environ.get('CS', '3.0'))
+# 커브 피팅 허용 오차(원본 px): 클수록 앵커가 적고 매끈
+FE = float(os.environ.get('FE', '1.0'))
 ROWS = ['ABCDEFGHIJKLM', 'NOPQRSTUVWXYZ', 'abcdefghijklm', 'nopqrstuvwxyz']
 XREF = 'acemnorsuvwxz'          # 엑스하이트·기준선 측정용 소문자
 CREF = 'EFHIKLMNTUVXZ'          # 대문자 높이 측정용
@@ -130,7 +132,7 @@ def vec(g, base):
     sub = cov[y0:y1, x0:x1] * cv2.dilate(g['mask'][y0:y1, x0:x1].astype(np.uint8), np.ones((5, 5)))
     big = cv2.resize(sub, None, fx=UP, fy=UP, interpolation=cv2.INTER_CUBIC)
     d = mask_to_path(big, scale=k / UP, ox=(x0 - g['x0']) * k, oy=(y0 - base) * k,
-                     sigma=1.4, step=8.0, corner_ang=38, csmooth=CS * UP)
+                     sigma=1.4, step=8.0, corner_ang=38, csmooth=CS * UP, fit_err=FE * UP)
     return re.sub(r'-?\d+\.\d+', lambda mm: str(int(round(float(mm.group())))), d)
 
 

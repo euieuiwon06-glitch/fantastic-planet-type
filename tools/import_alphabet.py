@@ -63,7 +63,7 @@ def vec(cov, g, base, k):
     big = cv2.resize(sub, None, fx=UP, fy=UP, interpolation=cv2.INTER_CUBIC)
     kk = k / UP
     d = mask_to_path(big, scale=kk, ox=(x0 - g['x0']) * k, oy=(y0 - base) * k,
-                     sigma=1.6 * UP / 2, step=4.5 * UP, corner_ang=38, csmooth=2.5 * UP)
+                     sigma=1.6 * UP / 2, step=4.5 * UP, corner_ang=38, csmooth=2.5 * UP, fit_err=1.0 * UP)
     return re.sub(r'-?\d+\.\d+', lambda m: str(int(round(float(m.group())))), d)
 
 

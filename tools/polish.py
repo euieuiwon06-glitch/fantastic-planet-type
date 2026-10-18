@@ -40,7 +40,8 @@ def clean(cov, min_area=600, hole_area=500):
 
 
 def trace(cov, i):
-    return mask_to_path(cov, scale=1/S, sigma=SIG[i], step=5.0, corner_ang=CORNER[i])
+    # 윤곽을 선 따라 편 뒤 긴 베지어로 커브 피팅 (울퉁불퉁한 잔표면 없이)
+    return mask_to_path(cov, scale=1/S, sigma=SIG[i], step=5.0, corner_ang=min(CORNER[i], 45), csmooth=5.0, fit_err=2.5)
 
 
 if __name__ == "__main__":

@@ -161,7 +161,7 @@ def smooth_contour(c, csig, corner_ang=45):
     p = resample(c, 1.0)
     n = len(p)
     if n < 12 or csig <= 0:
-        return p
+        return p, []
     # 코너는 미리 한 번 편 윤곽에서 넓은 범위로 판정 -> 우글거림을 코너로 오인하지 않게
     k = max(4, int(csig * 2.5))
     r0 = int(csig * 2)
@@ -176,7 +176,7 @@ def smooth_contour(c, csig, corner_ang=45):
         wrap = np.arange(-r, n + r) % n          # 둘레가 짧은 고리도 안전하게 감싸기
         for d in range(2):
             out[:, d] = np.convolve(p[wrap, d], w / w.sum(), 'valid')
-        return out
+        return out, []
     # 코너 사이 구간마다 따로 펴고, 코너 근처는 코너 쪽으로 덜 움직이게(끝점 고정)
     for j in range(len(cs)):
         a, b = cs[j], cs[(j + 1) % len(cs)]
@@ -191,28 +191,60 @@ def smooth_contour(c, csig, corner_ang=45):
             ext = np.pad(seg[:, d], r, mode='reflect', reflect_type='odd') if m > r + 1 else np.pad(seg[:, d], r, mode='edge')
             sm[:, d] = np.convolve(ext, w / w.sum(), 'valid')[:m]
         out[idx[1:-1]] = sm[1:-1]
-    return out
+    return out, cs
+
+
+def fit_path(p, cs, err):
+    """편 윤곽(1px 간격 점열) -> 적은 수의 긴 베지어. 코너 사이는 접선이 이어지는(G1) 곡선."""
+    n = len(p)
+    if not cs:
+        # 닫힌 곡선: 곡률이 가장 완만한 곳에서 열어 시작점 이음매도 매끈하게
+        start = 0
+        q = np.vstack([p[start:], p[:start + 1]])
+        tan = _unit(p[(start + 1) % n] - p[(start - 1) % n])
+        return fit_cubic(q, tan, -tan, err)
+    bz = []
+    for j in range(len(cs)):
+        a, b = cs[j], cs[(j + 1) % len(cs)]
+        idx = np.arange(a, b + 1) if b > a else np.r_[np.arange(a, n), np.arange(0, b + 1)]
+        seg = p[idx]
+        if len(seg) < 2:
+            continue
+        if len(seg) < 4:
+            bz.append(np.array([seg[0], seg[0] + (seg[-1] - seg[0]) / 3, seg[-1] - (seg[-1] - seg[0]) / 3, seg[-1]]))
+            continue
+        # 끝 접선은 몇 점 떨어진 곳으로 잡아 노이즈 영향 줄이기
+        k = min(4, len(seg) - 1)
+        t1 = _unit(seg[k] - seg[0]); t2 = _unit(seg[-1 - k] - seg[-1])
+        bz += fit_cubic(seg, t1, t2, err)
+    return bz
 
 
 def mask_to_path(mask, scale=1.0, ox=0.0, oy=0.0, sigma=1.4, step=5.0, err=None,
-                 corner_ang=70, corner_k=3, flip_y=False, min_len=20, csmooth=0.0):
+                 corner_ang=70, corner_k=3, flip_y=False, min_len=20, csmooth=0.0, fit_err=0.0):
     """mask(px) -> SVG path d. 좌표 = (px*scale + ox, py*scale + oy) (flip_y면 y 부호 반전)
-    csmooth: 윤곽선을 선 방향으로 펴는 세기(px). 저해상도 원본의 우글거림 제거용"""
+    csmooth: 윤곽선을 선 방향으로 펴는 세기(px). fit_err>0 이면 긴 베지어로 커브 피팅(허용 오차 px)"""
     d = []
+    def f(q):
+        x = q[0]*scale + ox; y = q[1]*scale + oy
+        if flip_y: y = -y
+        return f"{x:.2f} {y:.2f}"
     for c in contours(mask, sigma):
         if len(c) < min_len:
             continue
-        if csmooth:
-            c = smooth_contour(c, csmooth, corner_ang)
-        p = resample(c, step)
-        if len(p) < 6:
-            continue
-        cs = find_corners(p, corner_k, corner_ang) if corner_ang else []
-        bz = catmull_closed(p, cs)
-        def f(q):
-            x = q[0]*scale + ox; y = q[1]*scale + oy
-            if flip_y: y = -y
-            return f"{x:.2f} {y:.2f}"
+        if fit_err:
+            p, cs = smooth_contour(c, max(csmooth, 0.01), corner_ang) if csmooth else (resample(c, 1.0), [])
+            if len(p) < 6:
+                continue
+            bz = fit_path(p, cs, fit_err)
+        else:
+            if csmooth:
+                c, _ = smooth_contour(c, csmooth, corner_ang)
+            p = resample(c, step)
+            if len(p) < 6:
+                continue
+            cs = find_corners(p, corner_k, corner_ang) if corner_ang else []
+            bz = catmull_closed(p, cs)
         d.append("M" + f(bz[0][0]))
         for b in bz:
             d.append("C" + f(b[1]) + " " + f(b[2]) + " " + f(b[3]))
